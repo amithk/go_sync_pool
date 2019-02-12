@@ -36,3 +36,8 @@ func (c *Channel) Put(i interface{}) error {
 	}
 	return nil
 }
+
+func (c *Channel) Close() {
+	// TODO: Need to avoid closing of already closed channel
+	// close(c.ch)
+}

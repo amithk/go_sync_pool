@@ -117,3 +117,7 @@ func (q *Queue) Empty() bool {
 		return false
 	}
 }
+
+func (q *Queue) Close() {
+	// TODO: Drain the queue
+}

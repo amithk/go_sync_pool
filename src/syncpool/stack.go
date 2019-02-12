@@ -88,3 +88,7 @@ func (s *Stack) Get() (interface{}, error) {
 	}
 	return nil, nil
 }
+
+func (s *Stack) Close() {
+	// TODO: Drain the stack
+}

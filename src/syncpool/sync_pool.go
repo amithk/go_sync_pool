@@ -89,3 +89,7 @@ func (p *Pool) Get() interface{} {
 func (p *Pool) Put(val interface{}) {
 	_ = p.impl.Put(val)
 }
+
+func (p *Pool) Close() {
+	p.impl.Close()
+}
