@@ -5,6 +5,8 @@ import "errors"
 // Defaults
 var (
 	DEFAULT_CHAN_SIZE = 128
+	CHAN_HWM_PERCENT  = 80.0
+	CHAN_LWM_PERCENT  = 40.0
 )
 
 // Errors
@@ -24,11 +26,13 @@ type Pool struct {
 // Constructors start
 // -------------------------------
 func NewPool(fn NewFunc) *Pool {
-	return NewSizedPoolWithChannel(fn, int64(DEFAULT_CHAN_SIZE))
+	return NewSizedPoolWithChannel(fn, int64(DEFAULT_CHAN_SIZE),
+		CHAN_HWM_PERCENT, CHAN_LWM_PERCENT)
 }
 
 func NewSizedPool(fn NewFunc, size int64) *Pool {
-	return NewSizedPoolWithChannel(fn, size)
+	return NewSizedPoolWithChannel(fn, size, CHAN_HWM_PERCENT,
+		CHAN_LWM_PERCENT)
 }
 
 func NewPoolWithStack(fn NewFunc) *Pool {
@@ -63,10 +67,10 @@ func NewSizedPoolWithQueue(fn NewFunc, size int64) *Pool {
 	return p
 }
 
-func NewSizedPoolWithChannel(fn NewFunc, size int64) *Pool {
+func NewSizedPoolWithChannel(fn NewFunc, size int64, hwmPct, lwmPct float64) *Pool {
 	p := &Pool{
 		New:  fn,
-		impl: NewChannel(size),
+		impl: NewChannel(size, hwmPct, lwmPct),
 	}
 	return p
 }

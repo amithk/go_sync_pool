@@ -1,13 +1,25 @@
 package syncpool
 
+import "time"
+import "sync/atomic"
+
 type Channel struct {
-	ch chan interface{}
+	ch     chan interface{}
+	size   int64
+	hwmPct float64
+	lwmPct float64
+	closed int32
 }
 
-func NewChannel(size int64) *Channel {
-	return &Channel{
-		ch: make(chan interface{}, size),
+func NewChannel(size int64, hwmPct, lwmPct float64) *Channel {
+	c := &Channel{
+		ch:     make(chan interface{}, size),
+		size:   size,
+		hwmPct: hwmPct,
+		lwmPct: lwmPct,
 	}
+	go c.Garbager()
+	return c
 }
 
 func (c *Channel) Get() (interface{}, error) {
@@ -40,4 +52,22 @@ func (c *Channel) Put(i interface{}) error {
 func (c *Channel) Close() {
 	// TODO: Need to avoid closing of already closed channel
 	// close(c.ch)
+	atomic.StoreInt32(&c.closed, 1)
+}
+
+func (c *Channel) Garbager() {
+	for {
+		if atomic.LoadInt32(&c.closed) == 1 {
+			return
+		}
+
+		l := len(c.ch)
+		if float64(l)/float64(c.size)*100 > c.hwmPct {
+			// TODO: Need to implement garbaging in batches
+			<-c.ch
+		}
+	}
+
+	// TODO: Sleep less, maybe
+	time.Sleep(1 * time.Millisecond)
 }
