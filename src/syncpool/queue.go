@@ -3,7 +3,6 @@ package syncpool
 import "sync/atomic"
 import "unsafe"
 
-// Note that this is unbounded queue
 type Queue struct {
 	front unsafe.Pointer
 	rear  unsafe.Pointer
