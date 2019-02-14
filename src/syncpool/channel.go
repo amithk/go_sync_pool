@@ -1,24 +1,18 @@
 package syncpool
 
-import "time"
 import "sync/atomic"
 
 type Channel struct {
 	ch     chan interface{}
 	size   int64
-	hwmPct float64
-	lwmPct float64
 	closed int32
 }
 
-func NewChannel(size int64, hwmPct, lwmPct float64) *Channel {
+func NewChannel(size int64) *Channel {
 	c := &Channel{
-		ch:     make(chan interface{}, size),
-		size:   size,
-		hwmPct: hwmPct,
-		lwmPct: lwmPct,
+		ch:   make(chan interface{}, size),
+		size: size,
 	}
-	go c.Garbager()
 	return c
 }
 
@@ -55,19 +49,6 @@ func (c *Channel) Close() {
 	atomic.StoreInt32(&c.closed, 1)
 }
 
-func (c *Channel) Garbager() {
-	for {
-		if atomic.LoadInt32(&c.closed) == 1 {
-			return
-		}
-
-		l := len(c.ch)
-		if float64(l)/float64(c.size)*100 > c.hwmPct {
-			// TODO: Need to implement garbaging in batches
-			<-c.ch
-		}
-	}
-
-	// TODO: Sleep less, maybe
-	time.Sleep(1 * time.Millisecond)
+func (c *Channel) Remove(count int64) {
+	// TODO: Implementation needed
 }

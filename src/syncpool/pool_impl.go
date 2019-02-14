@@ -6,4 +6,7 @@ type PoolImpl interface {
 	Put(interface{}) error
 
 	Close()
+
+	// Remove and discard 'count' number of elements
+	Remove(count int64)
 }

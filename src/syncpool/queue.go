@@ -121,3 +121,7 @@ func (q *Queue) Empty() bool {
 func (q *Queue) Close() {
 	// TODO: Drain the queue
 }
+
+func (q *Queue) Remove(count int64) {
+	// TODO: Implementation needed
+}

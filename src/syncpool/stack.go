@@ -92,3 +92,7 @@ func (s *Stack) Get() (interface{}, error) {
 func (s *Stack) Close() {
 	// TODO: Drain the stack
 }
+
+func (s *Stack) Remove(count int64) {
+	// TODO: Implementation needed
+}
