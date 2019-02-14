@@ -2,7 +2,7 @@ package syncpool
 
 import "errors"
 import "time"
-import gometrics "rcrowley/go-metrics"
+import gometrics "github.com/rcrowley/go-metrics"
 
 // Defaults
 var (
@@ -18,49 +18,49 @@ var ErrorClosed = errors.New("Pool is closed")
 type NewFunc func() interface{}
 
 // --------------------------------
-// GarbagerInfo
+// CleanerInfo
 // --------------------------------
 
-type GarbagerInfo struct {
+type CleanerInfo struct {
 	active int64
 	free   int64
 	ewma   gometrics.EWMA
 }
 
-func NewGarbagerInfo(ewma gometrics.EWMA) *GarbagerInfo {
-	return &GarbagerInfo{ewma: ewma}
+func NewCleanerInfo(ewma gometrics.EWMA) *CleanerInfo {
+	return &CleanerInfo{ewma: ewma}
 }
 
 // --------------------------------
 // Pool
 // --------------------------------
 type Pool struct {
-	New            NewFunc
-	impl           PoolImpl
-	enableGarbager bool
-	garbagerStopCh chan bool
-	ginfo          *GarbagerInfo
+	New           NewFunc
+	impl          PoolImpl
+	enableCleaner bool
+	cleanerStopCh chan bool
+	cinfo         *CleanerInfo
 }
 
-func NewPoolWithImpl(New NewFunc, impl PoolImpl, enableGarbager bool) *Pool {
+func NewPoolWithImpl(New NewFunc, impl PoolImpl, enableCleaner bool) *Pool {
 	var stopCh chan bool
-	var ginfo *GarbagerInfo
+	var cinfo *CleanerInfo
 
-	if enableGarbager {
+	if enableCleaner {
 		stopCh = make(chan bool)
-		ginfo = NewGarbagerInfo(gometrics.NewEWMA1())
+		cinfo = NewCleanerInfo(gometrics.NewEWMA1())
 	}
 
 	p := &Pool{
-		New:            New,
-		impl:           impl,
-		enableGarbager: enableGarbager,
-		garbagerStopCh: stopCh,
-		ginfo:          ginfo,
+		New:           New,
+		impl:          impl,
+		enableCleaner: enableCleaner,
+		cleanerStopCh: stopCh,
+		cinfo:         cinfo,
 	}
 
-	if enableGarbager {
-		go p.Garbager()
+	if enableCleaner {
+		go p.Cleaner()
 	}
 	return p
 }
@@ -121,14 +121,14 @@ func (p *Pool) Put(val interface{}) {
 }
 
 func (p *Pool) Close() {
-	close(p.garbagerStopCh)
+	close(p.cleanerStopCh)
 	p.impl.Close()
 }
 
-func (p *Pool) Garbager() {
+func (p *Pool) Cleaner() {
 	for {
 		select {
-		case <-p.garbagerStopCh:
+		case <-p.cleanerStopCh:
 			// TODO: Add log message
 			return
 
