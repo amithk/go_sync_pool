@@ -122,6 +122,14 @@ func (q *Queue) Close() {
 	// TODO: Drain the queue
 }
 
-func (q *Queue) Remove(count int64) {
-	// TODO: Implementation needed
+func (q *Queue) RemoveOne() bool {
+	var err error
+	_, err = q.Get()
+	if err == nil {
+		return true
+	} else if err == ErrorEmpty {
+		return false
+	} else {
+		panic(err)
+	}
 }

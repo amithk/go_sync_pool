@@ -49,6 +49,14 @@ func (c *Channel) Close() {
 	atomic.StoreInt32(&c.closed, 1)
 }
 
-func (c *Channel) Remove(count int64) {
-	// TODO: Implementation needed
+func (c *Channel) RemoveOne() bool {
+	var err error
+	_, err = c.Get()
+	if err == nil {
+		return true
+	} else if err == ErrorEmpty {
+		return false
+	} else {
+		panic(err)
+	}
 }

@@ -93,6 +93,14 @@ func (s *Stack) Close() {
 	// TODO: Drain the stack
 }
 
-func (s *Stack) Remove(count int64) {
-	// TODO: Implementation needed
+func (s *Stack) RemoveOne() bool {
+	var err error
+	_, err = s.Get()
+	if err == nil {
+		return true
+	} else if err == ErrorEmpty {
+		return false
+	} else {
+		panic(err)
+	}
 }

@@ -7,6 +7,7 @@ type PoolImpl interface {
 
 	Close()
 
-	// Remove and discard 'count' number of elements
-	Remove(count int64)
+	// Remove and discard one element
+	// Returns true if removed, else false
+	RemoveOne() bool
 }
