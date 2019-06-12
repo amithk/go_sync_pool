@@ -38,6 +38,10 @@ type Pool struct {
 	inpool        int64
 	ewma          gometrics.EWMA
 	maxSize       int64
+
+	// Max number of in-use objects in last interval
+	// This is a better representation of expected value
+	maxUsed int64
 }
 
 // -------------------------------
@@ -108,9 +112,11 @@ func (p *Pool) Get() interface{} {
 	if err == nil {
 		atomic.AddInt64(&p.inuse, 1)
 		atomic.AddInt64(&p.inpool, -1)
+		p.updateMaxUsed()
 		return val
 	} else if err == ErrorEmpty {
 		atomic.AddInt64(&p.inuse, 1)
+		p.updateMaxUsed()
 		return p.New()
 	} else {
 		// Unexpected error occurred
@@ -132,14 +138,28 @@ func (p *Pool) Put(val interface{}) {
 }
 
 func (p *Pool) Close() {
-	close(p.cleanerStopCh)
+	if p.enableCleaner {
+		close(p.cleanerStopCh)
+	}
 	p.impl.Close()
 }
 
 func (p *Pool) Update() {
-	inuse := atomic.LoadInt64(&p.inuse)
-	p.ewma.Update(inuse)
+	maxUsed := atomic.LoadInt64(&p.maxUsed)
+	p.ewma.Update(maxUsed)
+
+	// reset maxUsed for the next interval
+	atomic.AddInt64(&p.maxUsed, -maxUsed)
 	p.ewma.Tick()
+}
+
+func (p *Pool) updateMaxUsed() {
+	inuse := atomic.LoadInt64(&p.inuse)
+	maxUsed := atomic.LoadInt64(&p.maxUsed)
+
+	if maxUsed < inuse {
+		atomic.AddInt64(&p.maxUsed, inuse-maxUsed)
+	}
 }
 
 func (p *Pool) Clean() {
@@ -154,11 +174,12 @@ func (p *Pool) Clean() {
 
 		// TODO: If exp count remains zero for some time,
 		// let the pool become completely empty
+		var maxRetCount float64
 		if p.maxSize < 0 {
 			// Be lazy in cleaning
-			maxRetCount := 1
+			maxRetCount = float64(1)
 		} else {
-			maxRetCount := float64(0.1) * float64(p.maxSize)
+			maxRetCount = float64(0.1) * float64(p.maxSize)
 		}
 		for i := 0; i < int(maxRetCount); i++ {
 			removed := p.impl.RemoveOne()
